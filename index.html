@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Docker8 by wangfakang</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">Docker8</h1>
+        <p class="header">docker  struct and namespace and cgroup</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/wangfakang/docker8/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/wangfakang/docker8/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/wangfakang/docker8">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/wangfakang">wangfakang</a></p>
+
+
+      </header>
+      <section>
+        <p><code>关于docker架构的简单认识：</code></p>
+
+<h1>
+<a id="１宏观看docker" class="anchor" href="#%EF%BC%91%E5%AE%8F%E8%A7%82%E7%9C%8Bdocker" aria-hidden="true"><span class="octicon octicon-link"></span></a>１.宏观看docker:</h1>
+
+<p>首先docker是一种c/s模式的架构，分为docker client 和 docker daemon．其中docker client主要是
+收集用户执行的命令参数，并做简单的解析，然后解析调用相应的handler与docker daemon进行连接然后动
+过docker　daemon的router server 进行相应的路由处理，调用相应的函数进行response给client.      </p>
+
+<h1>
+<a id="2docker-client----" class="anchor" href="#2docker-client----" aria-hidden="true"><span class="octicon octicon-link"></span></a>2.docker client：    </h1>
+
+<p>主要是进行相关命令行的解析，然后进行向docker发送命令请求．</p>
+
+<h1>
+<a id="3docekr-daemon----" class="anchor" href="#3docekr-daemon----" aria-hidden="true"><span class="octicon octicon-link"></span></a>3.docekr daemon：    </h1>
+
+<p>主要就是根据client发过来的请求参数进行执行相应的handler.其组件：Docker Server、Engine和Job三部分，
+其中docker server是接受client的请求的，Engine主要是用来管理job的执行，job就是一个具体的任务执行．    </p>
+
+<h1>
+<a id="4docker镜像---" class="anchor" href="#4docker%E9%95%9C%E5%83%8F---" aria-hidden="true"><span class="octicon octicon-link"></span></a>4.docker镜像：   </h1>
+
+<p>docker 进行run　image的时候生成一个容器，有这样几个概念rootfs、Union mount、image以及layer。      </p>
+
+<ul>
+<li> rootfs：<br>
+传统来说，Linux操作系统内核启动时，内核首先会挂载一个只读（read-only）的rootfs，当系统检测其完整性之后，
+决定是否将其切换为读写（read-write）模式，或者最后在rootfs之上另行挂载一种文件系统并忽略rootfs。Docker
+架构下，依然沿用Linux中rootfs的思想。当Docker Daemon为Docker Container挂载rootfs的时候，与传统Linux内核
+类似，将其设定为只读（read-only）模式。在rootfs挂载完毕之后，和Linux内核不一样的是，Docker Daemon没有将
+Docker Container的文件系统设为读写（read-write）模式，而是利用Union mount的技术，在这个只读的rootfs之上
+再挂载一个读写（read-write）的文件系统，挂载时该读写（read-write）文件系统内空无一物。<br>
+</li>
+<li>union mount:<br>
+代表一种文件系统挂载的方式，允许同一时刻多种文件系统挂载在一起，并以一种文件系统的形式，呈现多种文件系统
+内容合并后的目录。<br>
+一般情况下，通过某种文件系统挂载内容至挂载点的话，挂载点目录中原先的内容将会被隐藏。而Union mount则不会将
+挂载点目录中的内容隐藏，反而是将挂载点目录中的内容和被挂载的内容合并，并为合并后的内容提供一个统一独立的文
+件系统视角。通常来讲，被合并的文件系统中只有一个会以读写（read-write）模式挂载，而其他的文件系统的挂载模式
+均为只读（read-only）。实现这种Union mount技术的文件系统一般被称为Union Filesystem，较为常见的有UnionFS、
+AUFS、OverlayFS等。<br>
+</li>
+</ul>
+
+<h1>
+<a id="5基础概念的简单介绍dockerlxccgroupnamespace是最近比较的技术先了解一下他们分别是什么----" class="anchor" href="#5%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5%E7%9A%84%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8Ddockerlxccgroupnamespace%E6%98%AF%E6%9C%80%E8%BF%91%E6%AF%94%E8%BE%83%E7%9A%84%E6%8A%80%E6%9C%AF%E5%85%88%E4%BA%86%E8%A7%A3%E4%B8%80%E4%B8%8B%E4%BB%96%E4%BB%AC%E5%88%86%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88----" aria-hidden="true"><span class="octicon octicon-link"></span></a>5.基础概念的简单介绍docker、lxc、cgroup、namespace是最近比较的技术。先了解一下他们分别是什么：    </h1>
+
+<p>docker是lxc的管理器，lxc是cgroup的管理工具，cgroup是namespace的用户空间的管理接口。namespace是linux内核在
+task_struct中对进程组管理的基础机制。<br>
+linux中称谓的container在内核层面由两个独立的机制保证，一个保证资源的隔离性，名为namespace；一个进行资源的
+控制，名为cgroup。    </p>
+
+<p>docker 的名字叫 lxc-docker而 LXC 又是基于 cgroup 的 namespace, chroot 等, 由于我并不懂这些, 但 namespace 可以帮助我们理解, 就像我们写
+程序一样, 这是一个命名空间, 与其他 namespace 相区别：<br>
+cgroup 对于 docker 是至关重要的, 了解它才会觉得 docker 不神秘, cgroup 全称为 control group, 是 linux 内核提供
+的功能, 简单的说, 它的作用就是把系统运行的进程按用户自定义的群组区分, 也就是说一个 docker, 一个 group　cgroup 
+有限制使用资源的能力．    </p>
+
+<ul>
+<li>Linux Namespaces机制提供一种资源隔离方案。PID,IPC,Network等系统资源不再是全局性的，而是属于特定的Namespace。
+每个Namespace里面的资源对其他Namespace都是透明的。要创建新的Namespace，只需要在调用clone时指定相应的flag。
+Linux Namespaces机制为实现基于容器的虚拟化技术提供了很好的基础，LXC（Linux containers）就是利用这一特性实
+现了资源的隔离。不同container内的进程属于不同的Namespace，彼此透明，互不干扰。下面我们就从clone系统调用的
+flag出发，来介绍各个Namespace。<br>
+</li>
+<li><p>UTS namespace提供了主机名和域名的隔离，这样每个容器就可以拥有了独立的主机名和域名，在网络上可以被视作一个独
+立的节点而非宿主机上的一个进程．<br>
+Mount namespace通过隔离文件系统挂载点对隔离文件系统提供支持，它是历史上第一个Linux namespace，所以它的标识位比
+较特殊，就是CLONE_NEWNS．   </p></li>
+<li><p>Cgroups是control groups的缩写，是Linux内核提供的一种可以限制、记录、隔离进程组（process groups）所使用的物理
+资源（如：cpu,memory,IO等等）的机制。最初由google的工程师提出，后来被整合进Linux内核。Cgroups也是LXC为实现虚
+拟化所使用的资源管理手段，可以说没有cgroups就没有LXC。       </p></li>
+</ul>
+
+<h1>
+<a id="欢迎一起交流学习-" class="anchor" href="#%E6%AC%A2%E8%BF%8E%E4%B8%80%E8%B5%B7%E4%BA%A4%E6%B5%81%E5%AD%A6%E4%B9%A0-" aria-hidden="true"><span class="octicon octicon-link"></span></a>欢迎一起交流学习 </h1>
+
+<p>在使用中有任何问题，欢迎反馈给我，可以用以下联系方式跟我交流</p>
+
+<ul>
+<li>邮件(1031379296#qq.com, 把#换成@)</li>
+<li>QQ: 1031379296</li>
+<li>weibo: <a href="http://weibo.com/u/2786211992/home">@王发康</a>
+</li>
+</ul>
+
+<h1>
+<a id="thx" class="anchor" href="#thx" aria-hidden="true"><span class="octicon octicon-link"></span></a>Thx</h1>
+
+<ul>
+<li>chunshengsterATgmail.com</li>
+</ul>
+
+<h1>
+<a id="author" class="anchor" href="#author" aria-hidden="true"><span class="octicon octicon-link"></span></a>Author</h1>
+
+<ul>
+<li>Linux\nginx\golang\c\c++爱好者</li>
+<li>欢迎一起交流  一起学习# </li>
+<li>Others say good and Others good</li>
+</ul>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		          <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("docker  struct and namespace and cgroup");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+  </body>
+</html>
